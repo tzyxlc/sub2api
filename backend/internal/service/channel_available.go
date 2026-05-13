@@ -119,6 +119,9 @@ func (s *ChannelService) fillGlobalPricingFallback(models []SupportedModel) {
 			continue
 		}
 		models[i].Pricing = synthesizePricingFromLiteLLM(lp)
+		if models[i].Pricing != nil {
+			models[i].PricingSource = SupportedModelPricingSourceGlobalFallback
+		}
 	}
 }
 

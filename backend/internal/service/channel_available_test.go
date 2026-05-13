@@ -72,10 +72,14 @@ func (s *stubGroupRepoForAvailable) UpdateSortOrders(ctx context.Context, update
 // newAvailableChannelService 构造一个 ChannelService，channelRepo.ListAll 返回给定 channels，
 // groupRepo 由参数决定。传入空 stub 表示「活跃分组列表为空」。
 func newAvailableChannelService(channels []Channel, groupRepo GroupRepository) *ChannelService {
+	return newAvailableChannelServiceWithPricing(channels, groupRepo, nil)
+}
+
+func newAvailableChannelServiceWithPricing(channels []Channel, groupRepo GroupRepository, pricingService *PricingService) *ChannelService {
 	repo := &mockChannelRepository{
 		listAllFn: func(ctx context.Context) ([]Channel, error) { return channels, nil },
 	}
-	return NewChannelService(repo, groupRepo, nil, nil)
+	return NewChannelService(repo, groupRepo, nil, pricingService)
 }
 
 func TestListAvailable_EmptyActiveGroups_NoGroupsAttached(t *testing.T) {
@@ -174,4 +178,36 @@ func TestListAvailable_DefaultsEmptyBillingModelSource(t *testing.T) {
 	}
 	require.Equal(t, BillingModelSourceChannelMapped, byName["empty"])
 	require.Equal(t, BillingModelSourceUpstream, byName["explicit"])
+}
+
+func TestListAvailable_GlobalPricingFallbackMarkedAsDisplayOnly(t *testing.T) {
+	inputPrice := 2e-6
+	channels := []Channel{{
+		ID:       1,
+		Name:     "openai",
+		Status:   StatusActive,
+		GroupIDs: []int64{1},
+		ModelMapping: map[string]map[string]string{
+			PlatformOpenAI: {"gpt-test": "gpt-test"},
+		},
+	}}
+	groupRepo := &stubGroupRepoForAvailable{
+		activeGroups: []Group{{ID: 1, Name: "pro", Platform: PlatformOpenAI, Status: StatusActive}},
+	}
+	pricingSvc := &PricingService{
+		pricingData: map[string]*LiteLLMModelPricing{
+			"gpt-test": {InputCostPerToken: inputPrice},
+		},
+	}
+	svc := newAvailableChannelServiceWithPricing(channels, groupRepo, pricingSvc)
+
+	out, err := svc.ListAvailable(context.Background())
+	require.NoError(t, err)
+	require.Len(t, out, 1)
+	require.Len(t, out[0].SupportedModels, 1)
+
+	got := out[0].SupportedModels[0]
+	require.Equal(t, "gpt-test", got.Name)
+	require.NotNil(t, got.Pricing)
+	require.Equal(t, SupportedModelPricingSourceGlobalFallback, got.PricingSource)
 }

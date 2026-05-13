@@ -453,9 +453,11 @@ func TestSupportedModels_ExactKeysAndPricing(t *testing.T) {
 	require.Equal(t, "anthropic", got[0].Platform)
 	require.Equal(t, "claude-opus-4-6", got[0].Name)
 	require.NotNil(t, got[0].Pricing)
+	require.Equal(t, SupportedModelPricingSourceChannel, got[0].PricingSource)
 	require.Equal(t, int64(11), got[0].Pricing.ID)
 	require.Equal(t, "claude-sonnet-4-6", got[1].Name)
 	require.Equal(t, int64(10), got[1].Pricing.ID)
+	require.Equal(t, SupportedModelPricingSourceChannel, got[1].PricingSource)
 }
 
 func TestSupportedModels_WildcardExpandedFromPricing(t *testing.T) {
@@ -482,7 +484,6 @@ func TestSupportedModels_WildcardExpandedFromPricing(t *testing.T) {
 	}
 }
 
-
 func TestSupportedModels_MissingPricingKeepsNilPricing(t *testing.T) {
 	ch := &Channel{
 		ModelMapping: map[string]map[string]string{
@@ -494,6 +495,7 @@ func TestSupportedModels_MissingPricingKeepsNilPricing(t *testing.T) {
 	require.Len(t, got, 1)
 	require.Equal(t, "claude-sonnet-4-6", got[0].Name)
 	require.Nil(t, got[0].Pricing)
+	require.Empty(t, got[0].PricingSource)
 }
 
 func TestSupportedModels_DedupAndSort(t *testing.T) {

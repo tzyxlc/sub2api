@@ -360,10 +360,16 @@ type ChannelUsageFields struct {
 
 // SupportedModel 渠道的一个支持模型条目（无通配符、可直接展示给用户）
 type SupportedModel struct {
-	Name     string               // 用户侧模型名
-	Platform string               // 所属平台
-	Pricing  *ChannelModelPricing // 定价详情（nil 表示未配置定价）
+	Name          string               // 用户侧模型名
+	Platform      string               // 所属平台
+	Pricing       *ChannelModelPricing // 定价详情（nil 表示未配置定价）
+	PricingSource string               // 定价来源；channel 表示渠道显式定价，global_fallback 仅用于展示
 }
+
+const (
+	SupportedModelPricingSourceChannel        = PricingSourceChannel
+	SupportedModelPricingSourceGlobalFallback = "global_fallback"
+)
 
 // wildcardSuffix 是模型模式中的通配符后缀标记（仅支持尾部匹配）。
 const wildcardSuffix = "*"
@@ -504,10 +510,15 @@ func (c *Channel) SupportedModels() []SupportedModel {
 			return
 		}
 		seen[key] = struct{}{}
+		pricingSource := ""
+		if pricing != nil {
+			pricingSource = SupportedModelPricingSourceChannel
+		}
 		result = append(result, SupportedModel{
-			Name:     displayName,
-			Platform: platform,
-			Pricing:  pricing,
+			Name:          displayName,
+			Platform:      platform,
+			Pricing:       pricing,
+			PricingSource: pricingSource,
 		})
 	}
 
