@@ -9,6 +9,7 @@ import (
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
@@ -255,7 +256,7 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 		Amount:          req.Amount,
 		PaymentType:     req.PaymentType,
 		OpenID:          req.OpenID,
-		ClientIP:        c.ClientIP(),
+		ClientIP:        ip.GetClientIP(c),
 		IsMobile:        mobile,
 		IsWeChatBrowser: isWeChatBrowser(c),
 		SrcHost:         c.Request.Host,
