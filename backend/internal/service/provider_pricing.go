@@ -81,7 +81,7 @@ func (s *ProviderPricingService) GetProviderPricing(ctx context.Context) (*Provi
 	models := make([]ProviderPricingModel, 0)
 	for _, ch := range channels {
 		for _, group := range ch.Groups {
-			if group.Name == "" {
+			if group.Name == "" || group.IsExclusive {
 				continue
 			}
 			enabled := ch.Status == StatusActive

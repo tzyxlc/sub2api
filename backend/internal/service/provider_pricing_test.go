@@ -137,6 +137,44 @@ func TestProviderPricingService_GetProviderPricing_UsesGlobalPricingFallback(t *
 	require.InDelta(t, 10.0, *got.OutputPrice, 1e-12)
 }
 
+func TestProviderPricingService_GetProviderPricing_ExportsOnlyPublicGroupsAndKeepsMultipleGroups(t *testing.T) {
+	inputPrice := 2e-6
+	channels := []Channel{{
+		ID:       1,
+		Name:     "mixed-groups",
+		Status:   StatusActive,
+		GroupIDs: []int64{10, 20, 30},
+		ModelPricing: []ChannelModelPricing{{
+			Platform:    PlatformOpenAI,
+			Models:      []string{"gpt-test"},
+			BillingMode: BillingModeToken,
+			InputPrice:  &inputPrice,
+		}},
+	}}
+
+	channelSvc := newAvailableChannelService(channels, &stubGroupRepoForAvailable{
+		activeGroups: []Group{
+			{ID: 10, Name: "public-a", Platform: PlatformOpenAI, RateMultiplier: 1.0, Status: StatusActive, IsExclusive: false},
+			{ID: 20, Name: "private-a", Platform: PlatformOpenAI, RateMultiplier: 2.0, Status: StatusActive, IsExclusive: true},
+			{ID: 30, Name: "public-b", Platform: PlatformOpenAI, RateMultiplier: 0.5, Status: StatusActive, IsExclusive: false},
+		},
+	})
+	svc := NewProviderPricingService(channelSvc, nil, nil)
+
+	resp, err := svc.GetProviderPricing(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, resp.Data)
+	require.Len(t, resp.Data.Models, 2)
+
+	require.Equal(t, "public-a", resp.Data.Models[0].GroupName)
+	require.Equal(t, "gpt-test", resp.Data.Models[0].ModelName)
+	require.InDelta(t, 2.0, resp.Data.Models[0].InputPrice, 1e-12)
+
+	require.Equal(t, "public-b", resp.Data.Models[1].GroupName)
+	require.Equal(t, "gpt-test", resp.Data.Models[1].ModelName)
+	require.InDelta(t, 1.0, resp.Data.Models[1].InputPrice, 1e-12)
+}
+
 func TestProviderPricingService_GetProviderPricing_UsesPlatformDefaultsWhenChannelHasNoModels(t *testing.T) {
 	channels := []Channel{{
 		ID:       1,
