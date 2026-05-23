@@ -167,7 +167,7 @@ func (s *ProviderPricingService) defaultSupportedModelsForPlatform(platform stri
 		if lp == nil {
 			continue
 		}
-		pricing := synthesizePricingFromLiteLLM(lp)
+		pricing := synthesizePricingFromLiteLLM(lp, nil)
 		if pricing == nil {
 			continue
 		}

@@ -20,7 +20,7 @@ FROM ${NODE_IMAGE} AS frontend-builder
 
 WORKDIR /app/frontend
 
-# Install pnpm
+# Install pnpm (pinned for reproducible Docker builds)
 RUN corepack enable && corepack prepare pnpm@10.23.0 --activate
 
 # Install dependencies first (better caching)
